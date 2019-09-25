@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script type="text/javascript" src="/Scripts/jquery-1.6.4.min.js"></script>
+    <script type="text/javascript" src="/Scripts/jquery.signalR-2.4.1.min.js"></script>
+    <script type="text/javascript" src="http://localhost:49611/SignalR/hubs"></script>
+    <script type="text/javascript">
+        var SignalrConnection;
+        var ChatProxy;
+
+        function Status(txt) {
+            $('.status').text(txt);
+        }
+
+        function Connect() {
+            ChatServerUrl = "http://localhost:49611/";
+            var ChatUrl = ChatServerUrl + "signalr";
+            //This will hold the connection to the signalr hub   
+            SignalrConnection = $.hubConnection(ChatUrl, {
+                useDefaultPath: false
+            });
+            ChatProxy = SignalrConnection.createHubProxy('ChatHub');
+
+            //This will be called by signalr   
+            ChatProxy.on("NotifyUser", function (temperature) {
+                $('.temperature').text(temperature);
+            });
+
+            //connecting the client to the signalr hub   
+            SignalrConnection.start().done(function () {
+                GetWeather();
+                Status("Connected to Signalr Server");
+            })
+                .fail(function () {
+                    Status("failed in connecting to the signalr server");
+                })
+
+        }
+
+        function ChangeWeather() {
+            //get the temperature from a textfield with id txtTemprature   
+            var Temperature = document.getElementById('txtTemperature').value;
+            //calling the ChangeWeather function on the signalr server   
+            ChatProxy.invoke('change_weather', Temperature).then(function () { GetWeather();});
+        }  
+        function GetWeather() {
+            //calling the GetWeather function on the signalr server   
+            ChatProxy.invoke('get_weather');
+        }
+    </script>
+</head>
+<body onload="Connect();">
+    <div style="text-align:center;">
+        <input type="text" id="txtTemperature" />
+        <button id="btnChange" onclick="ChangeWeather();">Change Weather</button>
+    </div>
+
+    SERVER TEMPERATURE: <span class="temperature"></span> <br/>
+    STATUS: <span class="status"></span>
+</body>
+</html>
